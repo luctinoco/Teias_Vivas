@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Análise de Redes - Um algoritmo versátil (Co-autoria Lucas F. T. Leonardo)</title>
+  <style>
+    /* Layout geral da página */
+    body {
+      background-color: #fdfdfd;
+      color: #333;
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    h1, h2, h3 {
+      margin-top: 0.8em;
+      font-weight: bold;
+    }
+    .title {
+      color: #000;
+      font-size: 1.8rem;
+    }
+    .subtitle {
+      color: #555;
+      font-size: 1.2rem;
+      margin-bottom: 0.5em;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #ccc;
+      margin: 2em 0;
+    }
+
+    /* Blocos de código: fundo escuro, borda, etc. */
+    .code-section {
+      margin-bottom: 2em;
+      background-color: #252525;
+      border: 2px solid #000;
+      padding: 1em;
+      border-radius: 6px;
+    }
+    pre {
+      margin: 0;
+      overflow-x: auto; /* barra de rolagem horizontal se necessário */
+    }
+    code {
+      color: #00FA9A; /* cor padrão do texto no código */
+      font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+      font-size: 0.95rem;
+      white-space: pre; /* mantém espaços e quebras de linha */
+    }
+
+    /* Classes para colorir Python (estilo aproximado do tema Dracula / PyCharm) */
+    .python-comment   { color: #6272a4; } /* roxo acinzentado */
+    .python-keyword   { color: #ff79c6; } /* rosa */
+    .python-builtin   { color: #8be9fd; } /* azul claro */
+    .python-string    { color: #f1fa8c; } /* amarelo claro */
+    .python-number    { color: #bd93f9; } /* lilás */
+
+    /* Destaques e listas */
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .reference-list {
+      list-style-type: disc;
+      padding-left: 1.5em;
+    }
+    .comments-section {
+      margin-bottom: 2em;
+      padding: 1em;
+      border: 2px dashed #ccc;
+      background-color: #f9f9f9;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Título principal -->
+<h1 class="title">Análise de Redes - Um algoritmo versátil (Co-autoria Lucas F. T. Leonardo)</h1>
+<p class="subtitle">
+  Exemplo de script em Python para análise de redes, unindo dados de diferentes planilhas e gerando relatórios e visualizações.
+</p>
+<hr />
+
+<!-- Seção do Código Python -->
+<h2>Código Python (analise_redes.py)</h2>
+<div class="code-section">
+<pre><code>
+<span class="python-keyword">import</span> sys
+<span class="python-keyword">import</span> pandas <span class="python-keyword">as</span> <span class="python-builtin">pd</span>  <span class="python-comment"># Biblioteca para manipulação de dados tabulares</span>
+<span class="python-keyword">import</span> networkx <span class="python-keyword">as</span> <span class="python-builtin">nx</span>  <span class="python-comment"># Biblioteca para criação e análise de redes complexas</span>
+<span class="python-keyword">import</span> matplotlib.pyplot <span class="python-keyword">as</span> <span class="python-builtin">plt</span>  <span class="python-comment"># Biblioteca para visualização gráfica</span>
+<span class="python-keyword">from</span> networkx.algorithms.community <span class="python-keyword">import</span> greedy_modularity_communities, label_propagation_communities
+
+<span class="python-comment"># ======== OPÇÃO PARA SALVAR PRINTS EM UM ARQUIVO DE TEXTO ======== #</span>
+<span class="python-comment"># Defina o caminho do seu arquivo de log</span>
+log_path = <span class="python-string">"C:/Users/lucas/Analise_redes/logs.txt"</span>
+
+<span class="python-comment"># Abre o arquivo em modo de escrita</span>
+log_file = <span class="python-builtin">open</span>(log_path, <span class="python-string">"w"</span>)
+<span class="python-comment"># Salva o stdout original para restaurar depois</span>
+original_stdout = sys.stdout
+<span class="python-comment"># Redireciona todos os prints para o arquivo log_file</span>
+sys.stdout = log_file
+<span class="python-comment"># ================================================================== #</span>
+
+<span class="python-keyword">try</span>:
+    <span class="python-comment"># 1) Carregar o arquivo Excel</span>
+    file_path = <span class="python-string">'C:/Users/lucas/Analise_redes/Redes_Mestrado.xlsx'</span>
+    data = <span class="python-builtin">pd</span>.ExcelFile(file_path)
+
+    <span class="python-comment"># 2) Verificar as planilhas disponíveis no arquivo</span>
+    sheet_names = data.sheet_names
+    <span class="python-builtin">print</span>(<span class="python-string">"Planilhas disponíveis:"</span>, sheet_names)
+
+    <span class="python-comment"># Verificar se as planilhas '18S' e '12S' existem</span>
+    <span class="python-keyword">if</span> <span class="python-string">"18S"</span> <span class="python-keyword">not in</span> sheet_names:
+        <span class="python-keyword">raise</span> ValueError(<span class="python-string">"A planilha '18S' não foi encontrada no arquivo Excel."</span>)
+    <span class="python-keyword">if</span> <span class="python-string">"12S"</span> <span class="python-keyword">not in</span> sheet_names:
+        <span class="python-keyword">raise</span> ValueError(<span class="python-string">"A planilha '12S' não foi encontrada no arquivo Excel."</span>)
+
+    <span class="python-comment"># 3) Carregar os dados das planilhas 18S e 12S</span>
+    data_18s = data.parse(sheet_name=<span class="python-string">'18S'</span>)
+    data_12s = data.parse(sheet_name=<span class="python-string">'12S'</span>)
+
+    <span class="python-comment"># 4) Normalizar os identificadores</span>
+    data_18s.iloc[:, <span class="python-number">0</span>] = data_18s.iloc[:, <span class="python-number">0</span>].str.strip().str.lower()
+    data_12s.iloc[:, <span class="python-number">0</span>] = data_12s.iloc[:, <span class="python-number">0</span>].str.strip().str.lower()
+
+    <span class="python-comment"># 5) Verificar se as colunas são binárias</span>
+    <span class="python-keyword">for</span> col <span class="python-keyword">in</span> data_18s.columns[<span class="python-number">1</span>:]:
+        valores_unicos = <span class="python-builtin">set</span>(data_18s[col].dropna().unique())
+        <span class="python-keyword">if</span> <span class="python-builtin">not</span> valores_unicos.issubset({<span class="python-number">0</span>, <span class="python-number">1</span>}):
+            <span class="python-keyword">raise</span> ValueError(<span class="python-string">f"A coluna '{col}' em 18S contém valores não binários: {valores_unicos}"</span>)
+
+    <span class="python-keyword">for</span> col <span class="python-keyword">in</span> data_12s.columns[<span class="python-number">1</span>:]:
+        valores_unicos = <span class="python-builtin">set</span>(data_12s[col].dropna().unique())
+        <span class="python-keyword">if</span> <span class="python-builtin">not</span> valores_unicos.issubset({<span class="python-number">0</span>, <span class="python-number">1</span>}):
+            <span class="python-keyword">raise</span> ValueError(<span class="python-string">f"A coluna '{col}' em 12S contém valores não binários: {valores_unicos}"</span>)
+
+    <span class="python-comment"># 6) Criar listas de arestas</span>
+    edges_18s = []
+    edges_12s = []
+
+    <span class="python-comment"># Processar 18S (Indivíduos -> Infecções)</span>
+    <span class="python-keyword">for</span> index, row <span class="python-keyword">in</span> data_18s.iterrows():
+        individual = row.iloc[<span class="python-number">0</span>]
+        <span class="python-keyword">for</span> infection <span class="python-keyword">in</span> data_18s.columns[<span class="python-number">1</span>:]:
+            <span class="python-keyword">if</span> row[infection] == <span class="python-number">1</span>:
+                edges_18s.append((individual, infection))
+
+    <span class="python-comment"># Processar 12S (Indivíduos -> Fontes Alimentares)</span>
+    <span class="python-keyword">for</span> index, row <span class="python-keyword">in</span> data_12s.iterrows():
+        individual = row.iloc[<span class="python-number">0</span>]
+        <span class="python-keyword">for</span> source <span class="python-keyword">in</span> data_12s.columns[<span class="python-number">1</span>:]:
+            <span class="python-keyword">if</span> row[source] == <span class="python-number">1</span>:
+                edges_12s.append((individual, source))
+
+    <span class="python-comment"># 7) Criar o grafo combinado</span>
+    G_combined = nx.Graph()
+
+    <span class="python-keyword">for</span> edge <span class="python-keyword">in</span> edges_18s:
+        G_combined.add_edge(edge[<span class="python-number">0</span>], edge[<span class="python-number">1</span>], source=<span class="python-string">'18S'</span>)
+
+    <span class="python-keyword">for</span> edge <span class="python-keyword">in</span> edges_12s:
+        G_combined.add_edge(edge[<span class="python-number">0</span>], edge[<span class="python-number">1</span>], source=<span class="python-string">'12S'</span>)
+
+    <span class="python-comment"># 8) Detectar comunidades</span>
+    communities_greedy = <span class="python-builtin">list</span>(greedy_modularity_communities(G_combined))
+    <span class="python-builtin">print</span>(<span class="python-string">f"Comunidades detectadas (Greedy): {len(communities_greedy)}"</span>)
+
+    communities_label_propagation = <span class="python-builtin">list</span>(label_propagation_communities(G_combined))
+    <span class="python-builtin">print</span>(<span class="python-string">f"Comunidades detectadas (Label Propagation): {len(communities_label_propagation)}"</span>)
+
+    communities = communities_greedy
+
+    <span class="python-comment"># 9) Calcular métricas para cada nó</span>
+    node_metrics = []
+    node_to_community = {}
+
+    <span class="python-keyword">for</span> i, community <span class="python-keyword">in</span> <span class="python-builtin">enumerate</span>(communities):
+        <span class="python-keyword">for</span> node <span class="python-keyword">in</span> community:
+            node_to_community[node] = <span class="python-string">f"Comunidade {i + 1}"</span>
+
+    degree_centrality = nx.degree_centrality(G_combined)
+    closeness_centrality = nx.closeness_centrality(G_combined)
+    betweenness_centrality = nx.betweenness_centrality(G_combined)
+    eigenvector_centrality = nx.eigenvector_centrality(G_combined, max_iter=<span class="python-number">1000</span>)
+
+    <span class="python-keyword">for</span> node <span class="python-keyword">in</span> G_combined.nodes():
+        <span class="python-keyword">if</span> node <span class="python-keyword">in</span> data_18s.iloc[:, <span class="python-number">0</span>].values <span class="python-builtin">or</span> node <span class="python-keyword">in</span> data_12s.iloc[:, <span class="python-number">0</span>].values:
+            tipo = <span class="python-string">'Indivíduo'</span>
+        <span class="python-keyword">elif</span> node <span class="python-keyword">in</span> data_18s.columns[<span class="python-number">1</span>:]:
+            tipo = <span class="python-string">'Infecção'</span>
+        <span class="python-keyword">elif</span> node <span class="python-keyword">in</span> data_12s.columns[<span class="python-number">1</span>:]:
+            tipo = <span class="python-string">'Fonte Alimentar'</span>
+        <span class="python-keyword">else</span>:
+            tipo = <span class="python-string">'Desconhecido'</span>
+
+        node_metrics.append({
+            <span class="python-string">'Nó'</span>: node,
+            <span class="python-string">'Tipo'</span>: tipo,
+            <span class="python-string">'Comunidade'</span>: node_to_community.get(node, <span class="python-string">'Desconhecido'</span>),
+            <span class="python-string">'Grau'</span>: G_combined.degree[node],
+            <span class="python-string">'Centralidade de Grau'</span>: degree_centrality[node],
+            <span class="python-string">'Centralidade de Proximidade'</span>: closeness_centrality[node],
+            <span class="python-string">'Centralidade de Intermediação'</span>: betweenness_centrality[node],
+            <span class="python-string">'Centralidade de Autovetor (Eigenvector)'</span>: eigenvector_centrality[node]
+        })
+
+    <span class="python-comment"># 10) Calcular métricas para cada comunidade</span>
+    community_metrics = []
+
+    <span class="python-keyword">for</span> i, community <span class="python-keyword">in</span> <span class="python-builtin">enumerate</span>(communities):
+        subgraph = G_combined.subgraph(community)
+        sub_deg = nx.degree_centrality(subgraph)
+        sub_clo = nx.closeness_centrality(subgraph)
+        sub_bet = nx.betweenness_centrality(subgraph)
+
+        community_data = {
+            <span class="python-string">'Comunidade'</span>: <span class="python-string">f'Comunidade {i + 1}'</span>,
+            <span class="python-string">'Tamanho'</span>: <span class="python-builtin">len</span>(community),
+            <span class="python-string">'Grau Médio'</span>: <span class="python-builtin">sum</span>(<span class="python-builtin">dict</span>(subgraph.degree()).values()) / <span class="python-builtin">len</span>(community),
+            <span class="python-string">'Densidade'</span>: nx.density(subgraph),
+            <span class="python-string">'Clustering Médio'</span>: nx.average_clustering(subgraph),
+            <span class="python-string">'Centralidade Média (Degree)'</span>: <span class="python-builtin">sum</span>(sub_deg.values()) / <span class="python-builtin">len</span>(community),
+            <span class="python-string">'Centralidade Média (Closeness)'</span>: <span class="python-builtin">sum</span>(sub_clo.values()) / <span class="python-builtin">len</span>(community),
+            <span class="python-string">'Centralidade Média (Betweenness)'</span>: <span class="python-builtin">sum</span>(sub_bet.values()) / <span class="python-builtin">len</span>(community),
+        }
+
+        community_metrics.append(community_data)
+
+    <span class="python-comment"># 11) DataFrame detalhado (Indivíduos, Infecções, etc.)</span>
+    detailed_community_data = []
+    <span class="python-keyword">for</span> i, community <span class="python-keyword">in</span> <span class="python-builtin">enumerate</span>(communities):
+        <span class="python-keyword">for</span> node <span class="python-keyword">in</span> community:
+            <span class="python-keyword">if</span> node <span class="python-keyword">in</span> data_18s.iloc[:, <span class="python-number">0</span>].values <span class="python-builtin">or</span> node <span class="python-keyword">in</span> data_12s.iloc[:, <span class="python-number">0</span>].values:
+                tipo = <span class="python-string">'Indivíduo'</span>
+            <span class="python-keyword">elif</span> node <span class="python-keyword">in</span> data_18s.columns[<span class="python-number">1</span>:]:
+                tipo = <span class="python-string">'Infecção'</span>
+            <span class="python-keyword">elif</span> node <span class="python-keyword">in</span> data_12s.columns[<span class="python-number">1</span>:]:
+                tipo = <span class="python-string">'Fonte Alimentar'</span>
+            <span class="python-keyword">else</span>:
+                tipo = <span class="python-string">'Desconhecido'</span>
+
+            detailed_community_data.append({
+                <span class="python-string">'Comunidade'</span>: <span class="python-string">f'Comunidade {i + 1}'</span>,
+                <span class="python-string">'Nó'</span>: node,
+                <span class="python-string">'Tipo'</span>: tipo
+            })
+
+    <span class="python-comment"># Convertendo em DataFrames</span>
+    node_metrics_df = <span class="python-builtin">pd</span>.DataFrame(node_metrics)
+    community_metrics_df = <span class="python-builtin">pd</span>.DataFrame(community_metrics)
+    detailed_community_df = <span class="python-builtin">pd</span>.DataFrame(detailed_community_data)
+
+    <span class="python-comment"># 12) Salvar relatórios em Excel</span>
+    output_excel_path = <span class="python-string">"C:/Users/lucas/Analise_redes/community_detailed_report.xlsx"</span>
+    <span class="python-keyword">with</span> <span class="python-builtin">pd</span>.ExcelWriter(output_excel_path) <span class="python-keyword">as</span> writer:
+        community_metrics_df.to_excel(writer, sheet_name=<span class="python-string">"Community Metrics"</span>, index=<span class="python-builtin">False</span>)
+        detailed_community_df.to_excel(writer, sheet_name=<span class="python-string">"Detailed Communities"</span>, index=<span class="python-builtin">False</span>)
+        node_metrics_df.to_excel(writer, sheet_name=<span class="python-string">"Node Metrics"</span>, index=<span class="python-builtin">False</span>)
+
+    <span class="python-builtin">print</span>(<span class="python-string">f"Relatório detalhado salvo em '{output_excel_path}'."</span>)
+
+    <span class="python-comment"># 13) Plotar a rede com comunidades</span>
+    <span class="python-keyword">def</span> plot_network_with_communities(graph, communities, layout=<span class="python-string">'spring'</span>):
+        <span class="python-string">"""
+        Plota o grafo destacando as comunidades.
+        :param graph: networkx.Graph()
+        :param communities: lista de conjuntos/listas com os nós de cada comunidade.
+        :param layout: 'spring', 'kamada_kawai', etc.
+        """</span>
+        <span class="python-keyword">if</span> layout == <span class="python-string">'spring'</span>:
+            pos = nx.spring_layout(graph, seed=<span class="python-number">42</span>)
+        <span class="python-keyword">elif</span> layout == <span class="python-string">'kamada_kawai'</span>:
+            pos = nx.kamada_kawai_layout(graph)
+        <span class="python-keyword">else</span>:
+            pos = nx.spring_layout(graph, seed=<span class="python-number">42</span>)
+            <span class="python-builtin">print</span>(<span class="python-string">f"Layout '{layout}' não reconhecido. Usando spring_layout."</span>)
+
+        plt.figure(figsize=(<span class="python-number">12</span>, <span class="python-number">8</span>))
+        <span class="python-keyword">import</span> matplotlib.colors <span class="python-keyword">as</span> mcolors
+        cmap = plt.colormaps[<span class="python-string">'hsv'</span>]
+
+        n = <span class="python-builtin">len</span>(communities)
+        colors = [mcolors.rgb2hex(cmap(i / n)) <span class="python-keyword">for</span> i <span class="python-keyword">in</span> <span class="python-builtin">range</span>(n)]
+
+        <span class="python-keyword">for</span> i, community <span class="python-keyword">in</span> <span class="python-builtin">enumerate</span>(communities):
+            nx.draw_networkx_nodes(
+                graph,
+                pos,
+                nodelist=<span class="python-builtin">list</span>(community),
+                node_color=colors[i],
+                label=<span class="python-string">f"Comunidade {i+1}"</span>,
+                node_size=<span class="python-number">300</span>
+            )
+        nx.draw_networkx_edges(graph, pos, edge_color=<span class="python-string">'gray'</span>, alpha=<span class="python-number">0.5</span>)
+        nx.draw_networkx_labels(graph, pos, font_size=<span class="python-number">8</span>)
+
+        plt.title(<span class="python-string">"Rede Combinada com Comunidades"</span>, fontsize=<span class="python-number">16</span>)
+        plt.legend(loc=<span class="python-string">"best"</span>)
+        plt.axis(<span class="python-string">'off'</span>)
+        plt.show()
+
+    <span class="python-comment"># Chamando a função de plotagem</span>
+    plot_network_with_communities(G_combined, communities, layout=<span class="python-string">'kamada_kawai'</span>)
+
+<span class="python-keyword">finally</span>:
+    sys.stdout = original_stdout
+    log_file.close()
+
+<span class="python-comment"># ========================= FIM DO CÓDIGO ========================= #</span>
+</code></pre>
+</div>
+
+<hr />
+
+<!-- Sessão de Explicações e Comentários -->
+<h2>Explicações das Funções e Etapas do Algoritmo</h2>
+<div class="comments-section">
+  <p>
+    Abaixo, detalhamos cada parte do código, referenciando documentações oficiais e explicando o funcionamento.
+  </p>
+  <ul class="reference-list">
+    <li>
+      <strong><code>import sys</code>, <code>import pandas as pd</code>, <code>import networkx as nx</code>, <code>import matplotlib.pyplot as plt</code></strong><br/>
+      Essas linhas importam bibliotecas padrão e de terceiros:
+      <ul>
+        <li><em>sys</em>: manipula recursos do sistema (por exemplo, stdout).</li>
+        <li><em>pandas</em>: biblioteca popular para manipular dados tabulares, planilhas Excel, CSV, etc.</li>
+        <li><em>networkx</em>: fornece estrutura e algoritmos para criar e analisar grafos (redes complexas).</li>
+        <li><em>matplotlib.pyplot</em>: biblioteca de visualização para plotar gráficos e redes.</li>
+      </ul>
+      Documentação: 
+      <a href="https://docs.python.org/3/library/sys.html" target="_blank">sys</a>, 
+      <a href="https://pandas.pydata.org/" target="_blank">pandas</a>, 
+      <a href="https://networkx.org/" target="_blank">networkx</a>, 
+      <a href="https://matplotlib.org/" target="_blank">matplotlib</a>.
+    </li>
+
+    <li>
+      <strong><code>log_path</code>, <code>log_file</code>, <code>sys.stdout</code></strong><br/>
+      Define o caminho <code>log_path</code> para armazenar logs, abre o arquivo em modo escrita e 
+      redireciona a saída padrão (<code>sys.stdout</code>) para esse arquivo.  
+      Isso faz com que os <code>print()</code> sejam gravados em arquivo, em vez de aparecerem no terminal.
+    </li>
+
+    <li>
+      <strong><code>file_path</code>, <code>pd.ExcelFile</code></strong><br/>
+      Carrega o arquivo Excel indicado em <code>file_path</code>.  
+      A função <code>pd.ExcelFile</code> lê a estrutura do Excel, permitindo acesso às planilhas via <code>.parse()</code>.
+    </li>
+
+    <li>
+      <strong><code>sheet_names</code></strong><br/>
+      Lista contendo todas as planilhas detectadas no arquivo Excel.  
+      É verificado se <em>"18S"</em> e <em>"12S"</em> estão presentes, caso contrário gera <code>ValueError</code>.
+    </li>
+
+    <li>
+      <strong><code>data_18s</code>, <code>data_12s</code></strong><br/>
+      São <code>DataFrame</code>s do <em>pandas</em>, cada um representando os dados das respectivas planilhas.  
+      Em seguida, normalizamos os identificadores (primeira coluna) com <code>.strip()</code> (remover espaços) e <code>.lower()</code> (converter para minúsculas).
+    </li>
+
+    <li>
+      <strong>Checagem de colunas binárias (0 ou 1)</strong><br/>
+      Para cada coluna (exceto a primeira), é verificado se os valores são um subconjunto de <code>{0, 1}</code>.  
+      Se encontrar algo diferente, gera exceção, garantindo coerência dos dados.
+    </li>
+
+    <li>
+      <strong>Criar listas de arestas (<code>edges_18s</code> e <code>edges_12s</code>)</strong><br/>
+      Percorre cada linha e coluna.  
+      - <code>18S</code>: Se a célula tiver <code>1</code>, cria uma aresta (<code>individual, infection</code>).  
+      - <code>12S</code>: Se tiver <code>1</code>, aresta (<code>individual, fonte_alimentar</code>).  
+      Esses pares ficam armazenados em <code>edges_18s</code> e <code>edges_12s</code>, preparando para montar o grafo.
+    </li>
+
+    <li>
+      <strong><code>G_combined = nx.Graph()</code></strong><br/>
+      Cria um grafo <em>não-direcionado</em> (undirected).  
+      Em seguida, <code>add_edge</code> insere cada conexão encontrada (tanto de <code>18S</code> quanto de <code>12S</code>) no grafo, 
+      armazenando também a fonte (<code>source='18S'</code> ou <code>'12S'</code>).
+    </li>
+
+    <li>
+      <strong>Detecção de comunidades (<code>greedy_modularity_communities</code> e <code>label_propagation_communities</code>)</strong><br/>
+      - <em>greedy_modularity_communities</em>: Algoritmo que tenta agrupar nós maximizando a modularidade, de forma gananciosa.  
+      - <em>label_propagation_communities</em>: Algoritmo em que cada nó recebe um rótulo e este rótulo se propaga de acordo com vizinhos, convergindo em comunidades.  
+      O script imprime quantas comunidades foram encontradas por cada método. Depois, a lista <code>communities</code> fica com o resultado do método <em>Greedy</em>, 
+      sendo usada nas análises subsequentes.
+      Documentação: 
+      <a href="https://networkx.org/documentation/stable/reference/algorithms/community.html" target="_blank">community algorithms</a>.
+    </li>
+
+    <li>
+      <strong>Métricas para cada nó</strong><br/>
+      <ul>
+        <li><code>nx.degree_centrality</code>: Calcula centralidade de grau (quantidade de ligações de um nó em relação ao total possível).</li>
+        <li><code>nx.closeness_centrality</code>: Mede quão “perto” um nó está dos demais (baseado em distâncias).  
+        <li><code>nx.betweenness_centrality</code>: Mede a frequência com que um nó está em caminhos mínimos entre pares de outros nós.</li>
+        <li><code>nx.eigenvector_centrality</code>: Centralidade de autovetor (mede influência levando em conta a importância dos vizinhos).  
+      </ul>
+      Cada nó recebe informações de <em>tipo</em> (<strong>Indivíduo</strong>, <strong>Infecção</strong>, <strong>Fonte Alimentar</strong> ou <strong>Desconhecido</strong>), 
+      grau, e as diferentes centralidades.
+    </li>
+
+    <li>
+      <strong>Métricas para cada comunidade</strong><br/>
+      Para cada grupo identificado:  
+      - <code>subgraph</code> extrai apenas os nós daquela comunidade.  
+      - Calcula <em>grau médio</em>, <em>densidade</em> (proporção de conexões possíveis), <em>clustering médio</em>, etc.  
+      - <em>Centralidade Média</em> (grau, closeness, betweenness) é obtida somando as centralidades de cada nó e dividindo pelo total de nós da comunidade.
+    </li>
+
+    <li>
+      <strong>DataFrame detalhado (Indivíduos, Infecções, Fontes Alimentares)</strong><br/>
+      Lista todos os nós de cada comunidade e registra seu <em>tipo</em>.  
+      Isso facilita consultar “qual nó pertence a qual comunidade” e “qual categoria ele representa”.
+    </li>
+
+    <li>
+      <strong>Salvar relatórios em Excel</strong><br/>
+      Cria três planilhas dentro de um mesmo arquivo (<code>community_detailed_report.xlsx</code>):  
+      - <em>Community Metrics</em>  
+      - <em>Detailed Communities</em>  
+      - <em>Node Metrics</em>  
+      Isso facilita a análise posterior no Excel, inclusive com filtros e formatações adicionais.
+    </li>
+
+    <li>
+      <strong>Função <code>plot_network_with_communities</code></strong><br/>
+      Recebe um <code>graph</code> e uma lista de <code>communities</code>, além de um <code>layout</code> (padrão = 'spring').  
+      - <code>nx.spring_layout</code>: gera posições usando uma “força simulada” que tende a separar / agrupar nós.  
+      - <code>nx.kamada_kawai_layout</code>: outro método que tenta equilibrar distâncias.  
+      - Desenha nós de cada comunidade com cores diferentes (usando <code>matplotlib.colors</code> e colormap <em>hsv</em>),  
+        desenha as <code>edges</code> (arestas) e exibe legendas.  
+      - <code>plt.show()</code> exibe o gráfico.  
+      Documentação: 
+      <a href="https://networkx.org/documentation/stable/reference/drawing.html" target="_blank">NetworkX Drawing</a>.
+    </li>
+
+    <li>
+      <strong><code>finally</code></strong><br/>
+      Na cláusula <code>finally</code> do bloco <code>try/except</code>, restaura <code>sys.stdout</code> e fecha o arquivo de log, garantindo que o script sempre retorne a saída padrão ao final.
+    </li>
+  </ul>
+
+  <p>
+    Assim, o código oferece um <strong>fluxo completo</strong>:  
+    <em>(1)</em> lê planilhas,  
+    <em>(2)</em> checa consistência,  
+    <em>(3)</em> monta grafo combinando dados de infecções e fontes alimentares,  
+    <em>(4)</em> detecta comunidades,  
+    <em>(5)</em> calcula métricas de nós e comunidades,  
+    <em>(6)</em> salva relatórios e  
+    <em>(7)</em> plota a rede.
+  </p>
+</div>
+
+</body>
+</html>
